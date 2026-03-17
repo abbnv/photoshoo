@@ -13,7 +13,7 @@ RUN apt-get update \
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 
-RUN npm ci --include=dev
+RUN npm install --include=dev --no-audit --no-fund
 RUN npx prisma generate
 
 COPY . .
