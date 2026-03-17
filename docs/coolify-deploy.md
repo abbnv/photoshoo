@@ -7,39 +7,51 @@
 
 ## What to create in Coolify
 
-1. Create a new **PostgreSQL** resource in Coolify.
-2. Create a new **Application** from this repo with base directory:
+1. Create a new **Application** from this repo with the **Docker Compose** build pack.
+2. Use base directory:
    - `/` (root)
-3. Use the included `Dockerfile`.
-4. Expose port `3000`.
-5. Add a persistent storage mount:
-   - Container path: `/app/storage-data`
+3. Use the included [docker-compose.yml](/Users/aleksandrbubnov/Documents/DEV/ai_photoshoot_mvp/docker-compose.yml).
+4. After Coolify reads the compose file, assign the custom domain to the `app` service:
+   - `https://photo.aishny.ru:3000`
+
+This stack already contains both:
+
+- `app`
+- `postgres`
 
 ## Required environment variables
 
 Copy values from `.env.example` and set at least:
 
-- `DATABASE_URL`
 - `NEXTAUTH_URL=https://photo.aishny.ru`
 - `NEXTAUTH_SECRET`
 - `ADMIN_EMAILS`
-- `STORAGE_ROOT=/app/storage-data`
+- `POSTGRES_PASSWORD`
 
-Recommended format for `DATABASE_URL` when using the internal Coolify PostgreSQL service:
+Recommended full set:
 
 ```env
-DATABASE_URL=postgresql://app:strong_password@postgres:5432/ai_photoshoot?schema=public
+NEXTAUTH_URL=https://photo.aishny.ru
+NEXTAUTH_SECRET=replace_with_long_random_secret
+ADMIN_EMAILS=a.bbnv@yandex.ru
+POSTGRES_USER=app
+POSTGRES_PASSWORD=replace_with_strong_db_password
+POSTGRES_DB=ai_photoshoot
+LAVA_API_KEY=
+LAVA_WEBHOOK_BASIC_LOGIN=
+LAVA_WEBHOOK_BASIC_PASSWORD=
+LAVA_WEBHOOK_API_KEY=
 ```
 
-Replace `postgres` with the actual hostname/service name that Coolify gives your PostgreSQL resource.
+`DATABASE_URL` is assembled automatically inside the compose stack, so you do not need to add it manually in Coolify.
 
 ## First launch
 
-The container entrypoint automatically:
+The `app` container entrypoint automatically:
 
 - waits for PostgreSQL
 - runs `npx prisma db push --skip-generate`
-- creates `STORAGE_ROOT`
+- creates `/app/storage-data`
 - starts `next start`
 
 No extra migration command is required for the first boot.
@@ -87,11 +99,11 @@ DATABASE_URL='postgresql://app:app@localhost:5434/ai_photoshoot?schema=public' s
 
 ### 2. Import into Coolify PostgreSQL
 
-Run locally from the same project folder, replacing the target URL with the PostgreSQL credentials from Coolify:
+Run locally from the same project folder, replacing the target URL with the PostgreSQL credentials from the compose stack you deployed in Coolify:
 
 ```bash
 cd /Users/aleksandrbubnov/Documents/DEV/ai_photoshoot_mvp
-DATABASE_URL='postgresql://app:strong_password@your-coolify-postgres-host:5432/ai_photoshoot?schema=public' sh scripts/import-db.sh ./backup.dump
+DATABASE_URL='postgresql://app:strong_password@your-coolify-server-or-tunnel-host:5432/ai_photoshoot?schema=public' sh scripts/import-db.sh ./backup.dump
 ```
 
 Supported import formats:

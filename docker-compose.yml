@@ -1,21 +1,41 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:?set-in-coolify}@postgres:5432/${POSTGRES_DB:-ai_photoshoot}?schema=public
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?set-in-coolify}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set-in-coolify}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:?set-in-coolify}
+      STORAGE_ROOT: /app/storage-data
+      PORT: 3000
+      LAVA_API_KEY: ${LAVA_API_KEY:-}
+      LAVA_WEBHOOK_BASIC_LOGIN: ${LAVA_WEBHOOK_BASIC_LOGIN:-}
+      LAVA_WEBHOOK_BASIC_PASSWORD: ${LAVA_WEBHOOK_BASIC_PASSWORD:-}
+      LAVA_WEBHOOK_API_KEY: ${LAVA_WEBHOOK_API_KEY:-}
+    volumes:
+      - storage_data:/app/storage-data
+
   postgres:
     image: postgres:16-alpine
-    container_name: ai-photoshoot-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app
-      POSTGRES_DB: ai_photoshoot
-    ports:
-      - "5434:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set-in-coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_photoshoot}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d ai_photoshoot"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-ai_photoshoot}"]
       interval: 5s
       timeout: 3s
       retries: 20
 
 volumes:
   postgres_data:
+  storage_data:
