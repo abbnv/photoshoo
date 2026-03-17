@@ -28,11 +28,15 @@ function getDatasourceUrl(): string | undefined {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    datasources: {
-      db: {
-        url: getDatasourceUrl(),
-      },
-    },
+    ...(getDatasourceUrl()
+      ? {
+          datasources: {
+            db: {
+              url: getDatasourceUrl(),
+            },
+          },
+        }
+      : {}),
     log: process.env.NODE_ENV === 'development' ? ['error'] : ['error'],
   });
 
