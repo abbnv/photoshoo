@@ -8,10 +8,17 @@ import { getRuntimeAdminConfig } from '@/lib/admin-config';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name } = body ?? {};
+    const { email, password, name, acceptedLegal } = body ?? {};
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
+
+    if (acceptedLegal !== true) {
+      return NextResponse.json(
+        { error: 'You must accept the privacy policy and user agreement' },
+        { status: 400 }
+      );
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });

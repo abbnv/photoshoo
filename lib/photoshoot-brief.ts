@@ -86,36 +86,46 @@ export function getRankedScenes(
 
   return enabledScenes
     .map((scene) => {
-      const supportsUseCase =
-        !brief.useCaseKey ||
-        scene.supportedUseCases.length === 0 ||
-        scene.supportedUseCases.includes(brief.useCaseKey);
-      const supportsImpression =
-        !brief.impressionKey ||
-        scene.supportedImpressions.length === 0 ||
-        scene.supportedImpressions.includes(brief.impressionKey);
-
-      if (!supportsUseCase || !supportsImpression) {
-        return null;
-      }
+      const exactUseCaseMatch = Boolean(brief.useCaseKey && scene.supportedUseCases.includes(brief.useCaseKey));
+      const exactImpressionMatch = Boolean(
+        brief.impressionKey && scene.supportedImpressions.includes(brief.impressionKey)
+      );
+      const flexibleUseCaseMatch = scene.supportedUseCases.length === 0;
+      const flexibleImpressionMatch = scene.supportedImpressions.length === 0;
+      const formatMatch = Boolean(brief.formatPresetKey && scene.formatPresetKey === brief.formatPresetKey);
 
       let score = scene.rankingWeight;
       const reasons: string[] = [];
 
-      if (brief.useCaseKey && scene.supportedUseCases.includes(brief.useCaseKey)) {
-        score += 20;
+      if (exactUseCaseMatch) {
+        score += 24;
         reasons.push('Подходит под выбранную цель');
-      } else if (scene.supportedUseCases.length === 0) {
-        score += 8;
+      } else if (brief.useCaseKey && flexibleUseCaseMatch) {
+        score += 10;
         reasons.push('Универсальный сюжет');
+      } else if (brief.useCaseKey) {
+        score -= 14;
       }
 
-      if (brief.impressionKey && scene.supportedImpressions.includes(brief.impressionKey)) {
-        score += 20;
+      if (exactImpressionMatch) {
+        score += 24;
         reasons.push('Совпадает по впечатлению');
-      } else if (scene.supportedImpressions.length === 0) {
-        score += 8;
+      } else if (brief.impressionKey && flexibleImpressionMatch) {
+        score += 10;
         reasons.push('Гибко работает с разными образами');
+      } else if (brief.impressionKey) {
+        score -= 14;
+      }
+
+      if (formatMatch) {
+        score += 6;
+        reasons.push('Подходит под выбранный формат');
+      } else if (brief.formatPresetKey) {
+        score -= 3;
+      }
+
+      if (reasons.length === 0 && (brief.useCaseKey || brief.impressionKey || brief.formatPresetKey)) {
+        reasons.push('Лучший доступный сюжет для этого набора');
       }
 
       if (scene.locationFamily) {
