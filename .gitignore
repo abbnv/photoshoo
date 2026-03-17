@@ -2,6 +2,7 @@
 .abacus.donotdelete
 .env
 .env.*
+!.env.example
 node_modules
 .next
 .build
@@ -13,6 +14,7 @@ build
 
 .vercel
 storage-data
+storage
 backup.sql
 backup.sql.gz
 backup.dump
