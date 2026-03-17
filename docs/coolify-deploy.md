@@ -43,7 +43,7 @@ LAVA_WEBHOOK_BASIC_PASSWORD=
 LAVA_WEBHOOK_API_KEY=
 ```
 
-`DATABASE_URL` is assembled automatically inside the compose stack, so you do not need to add it manually in Coolify.
+`DATABASE_URL` is assembled automatically inside the app container from `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, so you do not need to add it manually in Coolify.
 
 ## First launch
 

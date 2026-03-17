@@ -8,10 +8,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:?set-in-coolify}@postgres:5432/${POSTGRES_DB:-ai_photoshoot}?schema=public
       NEXTAUTH_URL: ${NEXTAUTH_URL:?set-in-coolify}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set-in-coolify}
       ADMIN_EMAILS: ${ADMIN_EMAILS:?set-in-coolify}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set-in-coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_photoshoot}
       STORAGE_ROOT: /app/storage-data
       PORT: 3000
       LAVA_API_KEY: ${LAVA_API_KEY:-}
