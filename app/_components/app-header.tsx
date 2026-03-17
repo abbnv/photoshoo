@@ -2,19 +2,32 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Coins, CreditCard, LogOut, Plus, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  clearBillingCheckoutPending,
+  getBillingCheckoutPendingUntil,
+  notifyBillingBalanceRefresh,
+  subscribeToBillingRefresh,
+} from '@/lib/billing-browser';
 
 export default function AppHeader() {
   const { data: session } = useSession() || {};
   const router = useRouter();
   const isAdmin = (session?.user as any)?.isAdmin === true;
   const [balance, setBalance] = useState<number | null>(null);
+  const [pendingCheckoutUntil, setPendingCheckoutUntil] = useState<number | null>(null);
+  const balanceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   useEffect(() => {
     if (!session?.user) {
       setBalance(null);
+      setPendingCheckoutUntil(null);
       return;
     }
 
@@ -25,18 +38,31 @@ export default function AppHeader() {
         if (!response.ok) return;
         const payload = await response.json();
         if (active) {
-          setBalance(Number(payload?.balance ?? 0));
+          const nextBalance = Number(payload?.balance ?? 0);
+          if (pendingCheckoutUntil && balanceRef.current != null && nextBalance > balanceRef.current) {
+            clearBillingCheckoutPending();
+            setPendingCheckoutUntil(null);
+            notifyBillingBalanceRefresh();
+          }
+
+          setBalance(nextBalance);
         }
       } catch {}
     };
 
+    setPendingCheckoutUntil(getBillingCheckoutPendingUntil());
     loadBalance();
-    const intervalId = window.setInterval(loadBalance, 12000);
+    const intervalId = window.setInterval(loadBalance, pendingCheckoutUntil ? 3000 : 12000);
+    const unsubscribe = subscribeToBillingRefresh(() => {
+      setPendingCheckoutUntil(getBillingCheckoutPendingUntil());
+      void loadBalance();
+    });
     return () => {
       active = false;
+      unsubscribe();
       window.clearInterval(intervalId);
     };
-  }, [session?.user]);
+  }, [pendingCheckoutUntil, session?.user]);
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
