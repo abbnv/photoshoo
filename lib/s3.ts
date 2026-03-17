@@ -1,7 +1,7 @@
 import { mkdir, unlink } from 'fs/promises';
 import path from 'path';
 
-function getStorageRootPath(): string {
+export function getStorageRootPath(): string {
   return process.env.STORAGE_ROOT?.trim() || path.join(process.cwd(), 'storage');
 }
 

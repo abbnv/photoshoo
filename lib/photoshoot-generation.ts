@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { type RuntimeAdminConfig, type FormatPreset, type VariationChip } from '@/lib/admin-config';
+import { getStorageRootPath } from '@/lib/s3';
 import {
   findImpressionOption,
   findSceneDefinition,
@@ -129,7 +130,7 @@ export async function buildFalInputImage(
   let mimeType = 'image/jpeg';
 
   if (source.cloudStoragePath) {
-    const storageRoot = path.join(process.cwd(), 'storage');
+    const storageRoot = getStorageRootPath();
     const fullPath = path.join(storageRoot, source.cloudStoragePath);
     fileBuffer = await readFile(fullPath);
     mimeType = getMimeType(fullPath);
