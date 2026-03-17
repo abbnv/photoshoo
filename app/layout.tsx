@@ -7,10 +7,25 @@ export const dynamic = 'force-dynamic';
 
 const manrope = Manrope({ subsets: ['latin', 'cyrillic'] });
 
+function getMetadataBase(): URL {
+  const fallbackUrl = 'https://photo.aishny.ru';
+  const rawUrl = process.env.NEXTAUTH_URL?.trim();
+
+  if (!rawUrl) {
+    return new URL(fallbackUrl);
+  }
+
+  try {
+    return new URL(rawUrl);
+  } catch {
+    return new URL(fallbackUrl);
+  }
+}
+
 export const metadata: Metadata = {
   title: 'AI Фотосессия — Профессиональные фото с ИИ',
   description: 'Создайте потрясающие профессиональные портреты с помощью ИИ за несколько минут.',
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? 'http://localhost:3000'),
+  metadataBase: getMetadataBase(),
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
