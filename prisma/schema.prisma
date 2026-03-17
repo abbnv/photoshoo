@@ -1,0 +1,160 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  email       String       @unique @db.VarChar(255)
+  name        String?      @db.VarChar(255)
+  password    String?      @db.VarChar(255)
+  tokenBalance Int         @default(10) @map("token_balance")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  photoshoots Photoshoot[]
+  accounts    Account[]
+  sessions    Session[]
+  tokenTransactions TokenTransaction[]
+  billingPayments BillingPayment[]
+
+  @@map("users")
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int     @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique @map("session_token")
+  userId       Int      @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Photoshoot {
+  id              Int              @id @default(autoincrement())
+  userId          Int              @map("user_id")
+  title           String           @db.VarChar(255)
+  status          String           @default("draft") @db.VarChar(50)
+  quizAnswers     Json?            @map("quiz_answers")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceImages    SourceImage[]
+  generatedImages GeneratedImage[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("photoshoots")
+}
+
+model SourceImage {
+  id           Int        @id @default(autoincrement())
+  photoshootId Int        @map("photoshoot_id")
+  url          String     @db.Text
+  cloudStoragePath String? @map("cloud_storage_path") @db.Text
+  isPublic     Boolean    @default(true) @map("is_public")
+  fileOrder    Int        @default(0) @map("file_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  photoshoot   Photoshoot @relation(fields: [photoshootId], references: [id], onDelete: Cascade)
+
+  @@index([photoshootId])
+  @@map("source_images")
+}
+
+model GeneratedImage {
+  id           Int        @id @default(autoincrement())
+  photoshootId Int        @map("photoshoot_id")
+  url          String     @db.Text
+  cloudStoragePath String? @map("cloud_storage_path") @db.Text
+  isPublic     Boolean    @default(true) @map("is_public")
+  prompt       String?    @db.Text
+  seed         Int?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  photoshoot   Photoshoot @relation(fields: [photoshootId], references: [id], onDelete: Cascade)
+
+  @@index([photoshootId])
+  @@map("generated_images")
+}
+
+model AdminConfig {
+  id                                Int      @id @default(autoincrement())
+  key                               String   @unique @default("default") @db.VarChar(50)
+  falApiKey                         String?  @map("fal_api_key") @db.Text
+  openaiApiKey                      String?  @map("openai_api_key") @db.Text
+  lavaApiKey                        String?  @map("lava_api_key") @db.Text
+  lavaWebhookApiKey                 String?  @map("lava_webhook_api_key") @db.Text
+  lavaWebhookBasicLogin             String?  @map("lava_webhook_basic_login") @db.VarChar(255)
+  lavaWebhookBasicPassword          String?  @map("lava_webhook_basic_password") @db.Text
+  defaultGenerationsPerPhotoshoot   Int      @default(12) @map("default_generations_per_photoshoot")
+  basePromptTemplate                String   @map("base_prompt_template") @db.Text
+  editPromptTemplates               Json?    @map("edit_prompt_templates")
+  runtimeSettings                   Json?    @map("runtime_settings")
+  useCaseOptions                    Json?    @map("use_case_options")
+  impressionOptions                 Json?    @map("impression_options")
+  sceneDefinitions                  Json?    @map("scene_definitions")
+  variationChips                    Json?    @map("variation_chips")
+  formatPresets                     Json?    @map("format_presets")
+  portraitPromptConfig              Json?    @map("portrait_prompt_config")
+  billingConfig                     Json?    @map("billing_config")
+  createdAt                         DateTime @default(now()) @map("created_at")
+  updatedAt                         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("admin_configs")
+}
+
+model TokenTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  delta     Int
+  reason    String   @db.VarChar(64)
+  meta      Json?    @map("meta")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("token_transactions")
+}
+
+model BillingPayment {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  lavaContractId String   @unique @map("lava_contract_id") @db.VarChar(64)
+  tariffKey      String   @map("tariff_key") @db.VarChar(64)
+  tariffLabel    String   @map("tariff_label") @db.VarChar(255)
+  offerId        String   @map("offer_id") @db.VarChar(64)
+  tokens         Int
+  amountMinor    Int?     @map("amount_minor")
+  currency       String?  @db.VarChar(8)
+  status         String   @default("pending") @db.VarChar(32)
+  rawPayload     Json?    @map("raw_payload")
+  processedAt    DateTime? @map("processed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("billing_payments")
+}
